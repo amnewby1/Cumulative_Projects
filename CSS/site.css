@@ -29,6 +29,7 @@ a:hover {
   text-decoration: underline;
 }
 
+
 /* Site layout */
 
 /* This is the basic box that the main part of the page goes into */
@@ -42,6 +43,7 @@ a:hover {
 .hidden {
   display: none;
 }
+
 
 /* Forms */
 
@@ -104,9 +106,6 @@ form > hr {
   width: 70px;
 }
 
-.new-story-submission label {
-  width: fit-content;
-}
 
 /* responsive queries for tightening things up for mobile. */
 
