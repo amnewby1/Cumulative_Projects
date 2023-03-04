@@ -199,9 +199,40 @@ class User {
     }
   }
 
-  static async addFavorite(username, storyId) {
-    const res = await axios.post(
-      `${BASE_URL}/users/${username}/favorites/${storyId}`
+  static async addFavorite(token, username, storyId) {
+    const response = await axios({
+      url: `${BASE_URL}/users/${username}/favorites/${storyId}`,
+      method: "POST",
+      data: { token: token },
+    });
+  }
+
+  static async removeFavorite(token, username, storyId) {
+    const response = await axios({
+      url: `${BASE_URL}/users/${username}/favorites/${storyId}`,
+      method: "DELETE",
+      data: { token: token },
+    });
+  }
+
+  static async getUser(token, username) {
+    const response = await axios({
+      url: `${BASE_URL}/users/${username}`,
+      method: "GET",
+      params: { token },
+    });
+
+    let { user } = response.data;
+
+    return new User(
+      {
+        username: user.username,
+        name: user.name,
+        createdAt: user.createdAt,
+        favorites: user.favorites,
+        ownStories: user.stories,
+      },
+      response.data.token
     );
   }
 }

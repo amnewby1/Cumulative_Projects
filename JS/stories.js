@@ -19,64 +19,132 @@ async function getAndShowStoriesOnStart() {
  * Returns the markup for the story.
  */
 
-function test(e) {
-  console.log(e.target);
-}
-
-function generateStoryMarkup(story) {
-  // console.debug("generateStoryMarkup", story);
-  console.log(currentUser);
-  let i = 0;
+function isFavoriteStory(storyId) {
   let isFavorite = false;
-  while (i < currentUser.favorites && !isFavorite) {
-    if (currentUser.favorites[i].storyId === story.storyId) {
+  let i = 0;
+  while (i < currentUser.favorites.length && !isFavorite) {
+    console.log(storyId === currentUser.favorites[0].storyId);
+    if (currentUser.favorites[i].storyId === storyId) {
       isFavorite = true;
     }
     i++;
   }
+  return isFavorite;
+}
+
+function toggleFavorite(e, storyId) {
+  let isFavorite = e.target.classList.contains("bi-star-fill");
+  if (!isFavorite) {
+    e.target.classList.remove("bi-star");
+    e.target.classList.add("bi-star-fill");
+    handleAddFavorite(e, storyId);
+  } else {
+    e.target.classList.remove("bi-star-fill");
+    e.target.classList.add("bi-star");
+    handleRemoveFavorite(e, storyId);
+  }
+}
+
+function handleAddFavorite(e, storyId) {
+  e.preventDefault();
+  e.target.onclick = async (event) => {
+    let token = localStorage.getItem("token");
+    await User.addFavorite(token, currentUser.username, storyId);
+    currentUser = await User.getUser(token, currentUser.username);
+  };
+}
+
+function handleRemoveFavorite(e, storyId) {
+  e.preventDefault();
+  e.target.onclick = async (event) => {
+    event.preventDefault();
+    let token = localStorage.getItem("token");
+    await User.removeFavorite(token, currentUser.username, storyId);
+    currentUser = await User.getUser(token, currentUser.username);
+  };
+}
+
+function generateStoryMarkup(story) {
+  let isFavorite = isFavoriteStory(story.storyId);
 
   const hostName = story.getHostName();
-  console.log(story.storyId);
-  if (!isFavorite) {
-    return $(`
-      <li id="${story.storyId}">
-        <a href="${story.url}" target="a_blank" class="story-link">
-          ${story.title}
-        </a>
-        <small class="story-hostname">(${hostName})</small>
-        <small class="story-author">by ${story.author}</small>
-        <small class="story-user">posted by ${story.username}</small>
-        <div onclick="test(this)")><i class="bi bi-star"></i></div>
-      </li>
-    `);
-  }
-  return $(`
-      <li id="${story.storyId}">
-        <a href="${story.url}" target="a_blank" class="story-link">
-          ${story.title}
-        </a>
-        <small class="story-hostname">(${hostName})</small>
-        <small class="story-author">by ${story.author}</small>
-        <small class="story-user">posted by ${story.username}</small>
-        //add full star
-      </li>
-    `);
+
+  var storyElement = document.createElement("li");
+  storyElement.setAttribute("id", story.storyId);
+  storyElement.insertAdjacentHTML(
+    "afterbegin",
+    `<a href="${story.url}" target="a_blank" class="story-link">
+      ${story.title}
+    </a>
+    <small class="story-hostname">(${hostName})</small>
+    <small class="story-author">by ${story.author}</small>
+    <small class="story-user">posted by ${story.username}</small>`
+  );
+
+  let starElement = document.createElement("div");
+  let starIconElement = isFavorite
+    ? `<i class="bi bi-star-fill"></i>`
+    : `<i class="bi bi-star">`;
+  starElement.insertAdjacentHTML("afterbegin", starIconElement);
+
+  //console.log(currentUser)
+  starElement.onclick = (e) => toggleFavorite(e, story.storyId);
+
+  storyElement.appendChild(starElement);
+  let trashCanElement = document.createElement("div");
+  let trashCanIcon = `<i class="bi bi-trash3"></i>`;
+  trashCanElement.insertAdjacentHTML("afterbegin", trashCanIcon);
+  storyElement.appendChild(trashCanElement);
+  trashCanElement.onclick = (e) => storyElement.remove();
+
+  return storyElement;
 }
 
 /** Gets list of stories from server, generates their HTML, and puts on page. */
+
+function handleSwitchList() {}
 
 function putStoriesOnPage() {
   console.debug("putStoriesOnPage");
 
   $allStoriesList.empty();
+  $favoriteStoriesList.empty();
+  $createdStoriesList.empty();
 
   // loop through all of our stories and generate HTML for them
   for (let story of storyList.stories) {
     const $story = generateStoryMarkup(story);
     $allStoriesList.append($story);
   }
+  console.log(currentUser);
 
+  for (let favoriteStory of currentUser.favorites) {
+    const $favoriteStory = generateStoryMarkup(favoriteStory);
+    $favoriteStoriesList.append($favoriteStory);
+  }
+
+  for (let createdStory of currentUser.ownStories) {
+    const $createdStory = generateStoryMarkup(createdStory);
+    $createdStoriesList.append($createdStory);
+  }
   $allStoriesList.show();
+
+  let selectedList = document.getElementById("user-lists");
+  selectedList.onchange = (e) => {
+    if (e.target.value === "All") {
+      $allStoriesList.show();
+      $favoriteStoriesList.hide();
+      $createdStoriesList.hide();
+    } else if (e.target.value === "Favorites") {
+      $favoriteStoriesList.show();
+      $allStoriesList.hide();
+      $createdStoriesList.hide();
+    } else {
+      $createdStoriesList.show();
+      $allStoriesList.hide();
+      $favoriteStoriesList.hide();
+    }
+  };
 }
 
 async function newStorySubmit(evt) {
