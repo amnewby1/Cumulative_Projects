@@ -214,6 +214,13 @@ class User {
       data: { token: token },
     });
   }
+  static async deleteStory(token, storyId) {
+    const response = await axios({
+      url: `${BASE_URL}/stories/${storyId}`,
+      method: "DELETE",
+      data: { token: token },
+    });
+  }
 
   static async getUser(token, username) {
     const response = await axios({

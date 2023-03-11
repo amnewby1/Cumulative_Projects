@@ -45,23 +45,30 @@ function toggleFavorite(e, storyId) {
   }
 }
 
-function handleAddFavorite(e, storyId) {
+async function handleAddFavorite(e, storyId) {
   e.preventDefault();
-  e.target.onclick = async (event) => {
-    let token = localStorage.getItem("token");
-    await User.addFavorite(token, currentUser.username, storyId);
-    currentUser = await User.getUser(token, currentUser.username);
-  };
+  let token = localStorage.getItem("token");
+  await User.addFavorite(token, currentUser.username, storyId);
+  currentUser = await User.getUser(token, currentUser.username);
+  console.log(currentUser);
+  /*e.target.onclick = async (event) => {
+    
+  };*/
 }
 
-function handleRemoveFavorite(e, storyId) {
+async function handleRemoveFavorite(e, storyId) {
   e.preventDefault();
-  e.target.onclick = async (event) => {
-    event.preventDefault();
-    let token = localStorage.getItem("token");
-    await User.removeFavorite(token, currentUser.username, storyId);
-    currentUser = await User.getUser(token, currentUser.username);
-  };
+  let token = localStorage.getItem("token");
+  await User.removeFavorite(token, currentUser.username, storyId);
+  currentUser = await User.getUser(token, currentUser.username);
+}
+
+async function handleDeleteStory(e, storyId) {
+  e.preventDefault();
+  let token = localStorage.getItem("token");
+  await User.deleteStory(token, storyId);
+  currentUser = await User.getUser(token, currentUser.username);
+  e.target.parentNode.parentNode.remove();
 }
 
 function generateStoryMarkup(story) {
@@ -95,28 +102,24 @@ function generateStoryMarkup(story) {
   let trashCanIcon = `<i class="bi bi-trash3"></i>`;
   trashCanElement.insertAdjacentHTML("afterbegin", trashCanIcon);
   storyElement.appendChild(trashCanElement);
-  trashCanElement.onclick = (e) => storyElement.remove();
+  trashCanElement.onclick = (e) => {
+    handleDeleteStory(e, story.storyId);
+  };
 
   return storyElement;
 }
 
 /** Gets list of stories from server, generates their HTML, and puts on page. */
 
-function handleSwitchList() {}
-
-function putStoriesOnPage() {
-  console.debug("putStoriesOnPage");
-
+function updateLists() {
   $allStoriesList.empty();
   $favoriteStoriesList.empty();
   $createdStoriesList.empty();
 
-  // loop through all of our stories and generate HTML for them
   for (let story of storyList.stories) {
     const $story = generateStoryMarkup(story);
     $allStoriesList.append($story);
   }
-  console.log(currentUser);
 
   for (let favoriteStory of currentUser.favorites) {
     const $favoriteStory = generateStoryMarkup(favoriteStory);
@@ -127,7 +130,24 @@ function putStoriesOnPage() {
     const $createdStory = generateStoryMarkup(createdStory);
     $createdStoriesList.append($createdStory);
   }
+}
+
+document.getElementById("user-lists").onclick = (e) => {
+  updateLists();
+};
+
+function putStoriesOnPage() {
+  console.debug("putStoriesOnPage");
+
+  $allStoriesList.empty();
+  $favoriteStoriesList.empty();
+  $createdStoriesList.empty();
+
+  // loop through all of our stories and generate HTML for them
+  updateLists();
   $allStoriesList.show();
+  $favoriteStoriesList.hide();
+  $createdStoriesList.hide();
 
   let selectedList = document.getElementById("user-lists");
   selectedList.onchange = (e) => {
